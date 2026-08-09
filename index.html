@@ -1,0 +1,470 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>A Secret For You 💌</title>
+<style>
+  :root{
+    --pink: #ff6fa5;
+    --deep-pink: #d63384;
+    --cream: #fff5f7;
+    --gold: #f6c85f;
+  }
+  *{box-sizing:border-box; margin:0; padding:0;}
+  html,body{
+    min-height:100%;
+    font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+    background: linear-gradient(135deg,#ffe3ec,#ffd6e8,#ffe8f0);
+    overflow-x:hidden;
+    color:#4a1e33;
+  }
+  .screen{
+    min-height:100vh;
+    width:100%;
+    display:flex;
+    flex-direction:column;
+    align-items:center;
+    justify-content:center;
+    text-align:center;
+    padding:50px 20px;
+    position:relative;
+  }
+  h1{
+    font-size:2.4rem;
+    color:var(--deep-pink);
+    text-shadow: 0 2px 10px rgba(214,51,132,0.3);
+    margin-bottom:14px;
+  }
+  p.sub{
+    font-size:1.1rem;
+    max-width:560px;
+    line-height:1.6;
+    color:#7a3b56;
+    margin-bottom:10px;
+  }
+
+  /* Floating hearts background */
+  .heart{
+    position:fixed;
+    top:110%;
+    font-size:1.5rem;
+    color: var(--pink);
+    opacity:0.7;
+    pointer-events:none;
+    animation: floatUp linear infinite;
+    z-index:0;
+  }
+  @keyframes floatUp{
+    to{ transform: translateY(-120vh) rotate(360deg); opacity:0; }
+  }
+
+  button{
+    border:none;
+    padding:12px 26px;
+    border-radius:30px;
+    font-size:1rem;
+    cursor:pointer;
+    background:var(--pink);
+    color:white;
+    box-shadow:0 8px 20px rgba(255,111,165,0.4);
+    transition:transform 0.2s, background 0.2s;
+  }
+  button:hover{ transform:translateY(-2px); background:var(--deep-pink); }
+
+  /* ---------- CLUE PUZZLE SCREEN ---------- */
+  .progress-dots{
+    font-size:1.5rem;
+    letter-spacing:12px;
+    margin:16px 0 2px;
+    color:#f3b8cf;
+  }
+  .dot.filled{ color:var(--deep-pink); }
+  .progress-text{
+    font-size:0.9rem;
+    color:#a15577;
+    margin-bottom:26px;
+  }
+
+  .clue-row{
+    display:flex;
+    flex-wrap:wrap;
+    gap:22px;
+    justify-content:center;
+    max-width:800px;
+  }
+  .clue-card{
+    width:220px;
+    height:170px;
+    perspective:1000px;
+    cursor:pointer;
+    position:relative;
+  }
+  @media(max-width:700px){
+    .clue-card{ width:78vw; max-width:260px; }
+  }
+  .clue-inner{
+    position:relative;
+    width:100%;
+    height:100%;
+    transition:transform 0.8s;
+    transform-style:preserve-3d;
+  }
+  .clue-card.flipped .clue-inner{ transform:rotateY(180deg); }
+
+  .clue-front, .clue-back{
+    position:absolute;
+    inset:0;
+    backface-visibility:hidden;
+    border-radius:16px;
+    display:flex;
+    flex-direction:column;
+    align-items:center;
+    justify-content:center;
+    padding:16px;
+    text-align:center;
+  }
+  .clue-front{
+    background:linear-gradient(135deg,var(--pink),var(--deep-pink));
+    color:#fff;
+    box-shadow:0 10px 25px rgba(214,51,132,0.3);
+  }
+  .clue-num{ font-size:1.3rem; font-weight:bold; margin-bottom:8px; }
+  .clue-tap{ font-size:0.82rem; opacity:0.9; }
+  .clue-back{
+    background:#fff;
+    color:#5c2a44;
+    transform:rotateY(180deg);
+    box-shadow:0 10px 25px rgba(214,51,132,0.25);
+    font-size:0.92rem;
+    line-height:1.5;
+  }
+
+  .clue-card:not(.locked):not(.flipped){ animation:glowPulse 1.8s infinite; }
+  @keyframes glowPulse{
+    0%,100%{ box-shadow:0 8px 20px rgba(255,111,165,0.35); }
+    50%{ box-shadow:0 8px 32px rgba(255,111,165,0.75); }
+  }
+
+  .clue-card.locked{
+    pointer-events:none;
+    filter:grayscale(55%);
+    opacity:0.55;
+  }
+  .clue-card.locked .clue-front::after{
+    content:"🔒";
+    position:absolute;
+    inset:0;
+    display:flex;
+    align-items:center;
+    justify-content:center;
+    font-size:2rem;
+    background:rgba(0,0,0,0.35);
+    border-radius:16px;
+  }
+
+  #finalGift{
+    margin-top:46px;
+    opacity:0;
+    transform:scale(0.7) translateY(10px);
+    transition:all 0.6s ease;
+    pointer-events:none;
+    cursor:pointer;
+  }
+  #finalGift.show{ opacity:1; transform:scale(1) translateY(0); pointer-events:auto; }
+  #finalGift .box-icon{ font-size:3.3rem; animation:bounce 1.6s infinite; }
+  #finalGift p{ margin-top:8px; color:var(--deep-pink); font-weight:600; }
+  @keyframes bounce{
+    0%,100%{ transform:translateY(0); }
+    50%{ transform:translateY(-10px); }
+  }
+
+  /* ---------- REVEAL SCREEN ---------- */
+  .reveal-line{
+    font-size:1.3rem;
+    color:#7a3b56;
+    opacity:0;
+    transform:translateY(14px);
+    transition:all 0.7s ease;
+    margin-bottom:8px;
+  }
+  .reveal-line.show{ opacity:1; transform:translateY(0); }
+  .reveal-line.big{ font-size:1.7rem; color:var(--deep-pink); font-weight:600; }
+  .reveal-name{
+    font-size:2.6rem;
+    color:var(--deep-pink);
+    font-weight:bold;
+    opacity:0;
+    transform:scale(0.6);
+    transition:all 0.8s cubic-bezier(.34,1.56,.64,1);
+    margin-top:14px;
+    text-shadow:0 4px 20px rgba(214,51,132,0.4);
+  }
+  .reveal-name.show{ opacity:1; transform:scale(1); }
+  #continueBtn{
+    opacity:0;
+    margin-top:36px;
+    transition:opacity 0.6s ease;
+    pointer-events:none;
+  }
+  #continueBtn.show{ opacity:1; pointer-events:auto; }
+
+  /* ---------- PROPOSAL SCREEN ---------- */
+  .question{
+    font-size:2rem;
+    color:var(--deep-pink);
+    margin:20px 0 40px 0;
+  }
+  .btn-row{
+    display:flex;
+    gap:26px;
+    position:relative;
+    height:70px;
+    align-items:center;
+    justify-content:center;
+  }
+  #yesBtn{
+    font-size:1.2rem;
+    padding:16px 40px;
+    background:var(--deep-pink);
+  }
+  #noBtn{
+    font-size:1.2rem;
+    padding:16px 40px;
+    background:#ccc;
+    color:#555;
+    position:relative;
+    transition: transform 0.15s ease, left 0.15s ease, top 0.15s ease;
+  }
+  #yesBtn.grow{ transform: scale(1.15); }
+
+  /* ---------- CELEBRATION ---------- */
+  #celebration{ display:none; }
+  #celebration.active{ display:flex; }
+  #celebration h1{ font-size:2.6rem; }
+  .gif-hearts{ font-size:3rem; margin:20px 0; animation: pulse 1.2s infinite; }
+  @keyframes pulse{ 0%,100%{transform:scale(1);} 50%{transform:scale(1.2);} }
+  .names{
+    font-size:1.6rem;
+    color:var(--deep-pink);
+    margin-top:10px;
+    font-weight:bold;
+  }
+
+  /* Confetti */
+  .confetti-piece{
+    position:fixed;
+    top:-12px;
+    width:8px;
+    height:14px;
+    opacity:0.9;
+    pointer-events:none;
+    z-index:6;
+    animation-name:confettiFall;
+    animation-timing-function:linear;
+    animation-fill-mode:forwards;
+  }
+  @keyframes confettiFall{
+    to{ transform: translateY(112vh) rotate(560deg); opacity:0; }
+  }
+</style>
+</head>
+<body>
+
+<div id="heartsBg"></div>
+
+<!-- CLUE PUZZLE SCREEN (first thing she sees) -->
+<div class="screen" id="clueScreen">
+  <h1>Hi 👋</h1>
+  <p class="sub">Someone has hidden 3 little secrets for you. Unlock them one by one to find out who it's from, and what's waiting at the end...</p>
+
+  <div class="progress-dots">
+    <span class="dot" id="dot1">○</span>
+    <span class="dot" id="dot2">○</span>
+    <span class="dot" id="dot3">○</span>
+  </div>
+  <p class="progress-text" id="progressText">0 / 3 secrets unlocked</p>
+
+  <div class="clue-row">
+    <div class="clue-card" id="clue1" onclick="flipClue(1)">
+      <div class="clue-inner">
+        <div class="clue-front">
+          <div class="clue-num">Clue 1</div>
+          <div class="clue-tap">tap to unlock 💌</div>
+        </div>
+        <div class="clue-back"><p id="clueText1"></p></div>
+      </div>
+    </div>
+
+    <div class="clue-card locked" id="clue2" onclick="flipClue(2)">
+      <div class="clue-inner">
+        <div class="clue-front">
+          <div class="clue-num">Clue 2</div>
+          <div class="clue-tap">tap to unlock 💌</div>
+        </div>
+        <div class="clue-back"><p id="clueText2"></p></div>
+      </div>
+    </div>
+
+    <div class="clue-card locked" id="clue3" onclick="flipClue(3)">
+      <div class="clue-inner">
+        <div class="clue-front">
+          <div class="clue-num">Clue 3</div>
+          <div class="clue-tap">tap to unlock 💌</div>
+        </div>
+        <div class="clue-back"><p id="clueText3"></p></div>
+      </div>
+    </div>
+  </div>
+
+  <div id="finalGift" onclick="showReveal()">
+    <div class="box-icon">🎁</div>
+    <p>All secrets unlocked. Tap to see what's inside...</p>
+  </div>
+</div>
+
+<!-- REVEAL SCREEN -->
+<div class="screen" id="reveal" style="display:none;">
+  <div class="reveal-line" id="revealLine1">This whole time,</div>
+  <div class="reveal-line big" id="revealLine2">it was about you.</div>
+  <div class="reveal-name" id="revealName">Dharsini 💗</div>
+  <button id="continueBtn" onclick="showProposal()">Continue →</button>
+</div>
+
+<!-- PROPOSAL SCREEN -->
+<div class="screen" id="proposal" style="display:none;">
+  <h1>Dharsini,</h1>
+  <div class="question">Will you be mine? 💖</div>
+  <div class="btn-row">
+    <button id="yesBtn" onclick="sayYes()">Yes 💗</button>
+    <button id="noBtn" onmouseover="dodge()" onclick="dodge()">No</button>
+  </div>
+</div>
+
+<!-- CELEBRATION SCREEN -->
+<div class="screen" id="celebration">
+  <div class="gif-hearts">🎉💖🎉</div>
+  <h1>She said YES!</h1>
+  <p class="sub">Every love story is beautiful, but this one is my favourite.</p>
+  <div class="names">Dharsan ❤️ Dharsini</div>
+</div>
+
+<script>
+  /* ---------- Floating hearts background ---------- */
+  const heartsBg = document.getElementById('heartsBg');
+  function spawnHeart(){
+    const heart = document.createElement('div');
+    heart.classList.add('heart');
+    heart.innerHTML = ['💗','💖','💕','🌸','✨'][Math.floor(Math.random()*5)];
+    heart.style.left = Math.random()*100 + 'vw';
+    heart.style.fontSize = (1 + Math.random()*1.5) + 'rem';
+    heart.style.animationDuration = (6 + Math.random()*6) + 's';
+    heartsBg.appendChild(heart);
+    setTimeout(()=> heart.remove(), 12000);
+  }
+  setInterval(spawnHeart, 500);
+
+  /* ---------- Clue puzzle logic ---------- */
+  const clueTexts = {
+    1: "The first time something shifted between us, I didn't say a word — but I noticed everything. The way you laugh, the way you make ordinary days feel brighter.",
+    2: "Since then, every little moment with you — the silly texts, the long talks, the comfortable silences — quietly became my favourite part of any day.",
+    3: "I've held onto this feeling for a long time, waiting for the right moment. There's no perfect time, so I'm choosing right now to finally tell you the truth."
+  };
+
+  function flipClue(n){
+    const card = document.getElementById('clue'+n);
+    if(card.classList.contains('locked') || card.classList.contains('flipped')) return;
+
+    card.classList.add('flipped');
+    document.getElementById('dot'+n).textContent = '💗';
+    document.getElementById('dot'+n).classList.add('filled');
+    document.getElementById('progressText').textContent = n + ' / 3 secrets unlocked';
+
+    setTimeout(()=> typeText('clueText'+n, clueTexts[n]), 750);
+
+    if(n < 3){
+      setTimeout(()=>{
+        document.getElementById('clue'+(n+1)).classList.remove('locked');
+      }, 500);
+    } else {
+      setTimeout(()=>{
+        document.getElementById('finalGift').classList.add('show');
+      }, 1600);
+    }
+  }
+
+  function typeText(id, text, speed=26){
+    const el = document.getElementById(id);
+    el.textContent = '';
+    let i = 0;
+    const iv = setInterval(()=>{
+      el.textContent += text.charAt(i);
+      i++;
+      if(i >= text.length) clearInterval(iv);
+    }, speed);
+  }
+
+  function showReveal(){
+    document.getElementById('clueScreen').style.display = 'none';
+    const rev = document.getElementById('reveal');
+    rev.style.display = 'flex';
+    setTimeout(()=> document.getElementById('revealLine1').classList.add('show'), 300);
+    setTimeout(()=> document.getElementById('revealLine2').classList.add('show'), 1500);
+    setTimeout(()=> document.getElementById('revealName').classList.add('show'), 2900);
+    setTimeout(()=> document.getElementById('continueBtn').classList.add('show'), 4100);
+  }
+
+  function showProposal(){
+    document.getElementById('reveal').style.display = 'none';
+    document.getElementById('proposal').style.display = 'flex';
+  }
+
+  /* ---------- No button dodge logic ---------- */
+  const noBtn = document.getElementById('noBtn');
+  const yesBtn = document.getElementById('yesBtn');
+  let dodgeCount = 0;
+  function dodge(){
+    dodgeCount++;
+    const maxX = window.innerWidth * 0.3;
+    const maxY = 60;
+    const x = (Math.random() - 0.5) * maxX;
+    const y = (Math.random() - 0.5) * maxY;
+    noBtn.style.left = x + 'px';
+    noBtn.style.top = y + 'px';
+
+    if(dodgeCount > 2){ yesBtn.classList.add('grow'); }
+
+    const phrases = ["Are you sure?","Try again 😏","Nope, not that one!","Come on... 💗","Just say Yes!","Pretty please?"];
+    if(dodgeCount <= phrases.length){
+      noBtn.innerText = phrases[dodgeCount-1];
+    }
+  }
+
+  /* ---------- Celebration + confetti ---------- */
+  function sayYes(){
+    document.getElementById('proposal').style.display = 'none';
+    const cel = document.getElementById('celebration');
+    cel.classList.add('active');
+    cel.style.display = 'flex';
+    cel.style.flexDirection = 'column';
+    launchConfetti();
+    setTimeout(launchConfetti, 500);
+  }
+
+  function launchConfetti(){
+    const colors = ['#ff6fa5','#d63384','#f6c85f','#ffffff','#ff9fc3'];
+    for(let i=0;i<60;i++){
+      const p = document.createElement('div');
+      p.className = 'confetti-piece';
+      p.style.left = Math.random()*100 + 'vw';
+      p.style.background = colors[Math.floor(Math.random()*colors.length)];
+      p.style.animationDuration = (2.5 + Math.random()*2) + 's';
+      p.style.animationDelay = (Math.random()*0.4) + 's';
+      document.body.appendChild(p);
+      setTimeout(()=> p.remove(), 5200);
+    }
+  }
+</script>
+
+</body>
+</html>
